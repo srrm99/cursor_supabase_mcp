@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager - Users & Tasks</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-users-cog"></i> Task Manager Pro</h1>
+            <p>Manage users and assign tasks efficiently</p>
+        </header>
+
+        <!-- User Registration Section -->
+        <div class="form-container">
+            <h2><i class="fas fa-user-plus"></i> Register New User</h2>
+            <form id="userForm" class="user-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userName">
+                            <i class="fas fa-user"></i> Full Name *
+                        </label>
+                        <input type="text" id="userName" name="name" placeholder="Enter full name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userEmail">
+                            <i class="fas fa-envelope"></i> Email (Optional)
+                        </label>
+                        <input type="email" id="userEmail" name="email" placeholder="Enter email address">
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-user-plus"></i> Register User
+                </button>
+            </form>
+        </div>
+
+        <!-- Task Creation Section -->
+        <div class="form-container">
+            <h2><i class="fas fa-plus-circle"></i> Add New Task</h2>
+            <form id="taskForm" class="task-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="taskUser">
+                            <i class="fas fa-user-check"></i> Assign to User *
+                        </label>
+                        <select id="taskUser" name="user_id" required>
+                            <option value="">Select a user...</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="taskPriority">
+                            <i class="fas fa-flag"></i> Priority
+                        </label>
+                        <select id="taskPriority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskTitle">
+                        <i class="fas fa-heading"></i> Task Title *
+                    </label>
+                    <input type="text" id="taskTitle" name="title" placeholder="Enter task title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskDescription">
+                        <i class="fas fa-align-left"></i> Description
+                    </label>
+                    <textarea id="taskDescription" name="description" placeholder="Describe the task in detail..."></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-plus"></i> Add Task
+                </button>
+            </form>
+        </div>
+
+        <!-- Users Overview -->
+        <div class="users-container">
+            <div class="section-header">
+                <h2><i class="fas fa-users"></i> Registered Users</h2>
+                <button id="refreshUsersBtn" class="refresh-btn">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            
+            <div id="usersList" class="users-list">
+                {% for user in users %}
+                <div class="user-card" data-user-id="{{ user.id }}">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="user-details">
+                            <h3>{{ user.name }}</h3>
+                            {% if user.email %}
+                            <p class="user-email">{{ user.email }}</p>
+                            {% endif %}
+                            <p class="user-joined">Joined: {{ user.created_at[:10] }}</p>
+                        </div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="view-tasks-btn" onclick="showUserTasks({{ user.id }}, '{{ user.name }}')">
+                            <i class="fas fa-tasks"></i> View Tasks
+                        </button>
+                        <button class="delete-user-btn" onclick="deleteUser({{ user.id }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if not users %}
+            <div class="empty-state">
+                <i class="fas fa-user-friends"></i>
+                <p>No users registered yet. Add a user above to get started!</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Tasks Overview -->
+        <div class="tasks-container">
+            <div class="section-header">
+                <h2><i class="fas fa-list"></i> All Tasks</h2>
+                <div class="task-filters">
+                    <select id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <select id="priorityFilter">
+                        <option value="">All Priority</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <button id="refreshTasksBtn" class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="tasksList" class="tasks-list">
+                {% for task in tasks %}
+                <div class="task-card priority-{{ task.priority }} status-{{ task.status }}" data-task-id="{{ task.id }}">
+                    <div class="task-header">
+                        <div class="task-priority">
+                            <span class="priority-badge priority-{{ task.priority }}">
+                                <i class="fas fa-flag"></i> {{ task.priority.title() }}
+                            </span>
+                        </div>
+                        <div class="task-status">
+                            <select class="status-select" onchange="updateTaskStatus({{ task.id }}, this.value)">
+                                <option value="pending" {% if task.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="in_progress" {% if task.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="task-content">
+                        <h3 class="task-title">{{ task.title }}</h3>
+                        {% if task.description %}
+                        <p class="task-description">{{ task.description }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="task-footer">
+                        <div class="task-user">
+                            <i class="fas fa-user"></i>
+                            <strong>{{ task.users.name }}</strong>
+                        </div>
+                        <div class="task-date">
+                            <i class="fas fa-calendar"></i>
+                            {{ task.created_at[:10] }}
+                        </div>
+                        <button class="delete-task-btn" onclick="deleteTask({{ task.id }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if not tasks %}
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <p>No tasks created yet. Add a task above to get started!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- User Tasks Modal -->
+    <div id="userTasksModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">User Tasks</h2>
+                <button class="close-btn" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="modalTasksList" class="modal-tasks-list">
+                <!-- User tasks will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

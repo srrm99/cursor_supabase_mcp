@@ -1,0 +1,7 @@
+Supabase Configuration Template:
+
+Create a .env file in the project root with:
+SUPABASE_URL=your-supabase-project-url
+SUPABASE_ANON_KEY=your-supabase-anon-key
+
+Or set these environment variables directly in your system.
